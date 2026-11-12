@@ -1,9 +1,11 @@
 import { createInterface } from "node:readline";
 import { cyan, red, yellow } from "./colors.ts";
 import type { City, Config, Unit } from "./storage.ts";
-import type { CurrentWeather } from "./weather.ts";
+import type { CurrentWeather, DailyForecast } from "./weather.ts";
 
 const WIDTH = 40;
+
+const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"] as const;
 
 const readline = createInterface({
   input: process.stdin,
@@ -33,6 +35,8 @@ export function renderMenu(config: Config): string {
     "3. Buscar y agregar ciudad",
     "4. Eliminar ciudad",
     "5. Establecer ciudad default",
+    "6. Pronóstico 7 días (default)",
+    "7. Pronóstico 7 días (todas)",
     `8. Ajustes (${unitLabel(config.unit)})`,
     "9. Salir",
   ];
@@ -87,6 +91,43 @@ export function renderWeatherCard(city: City, weather: CurrentWeather): string {
     `  Sensación: ${yellow(`${Math.round(weather.apparentTemperature)}${weather.temperatureUnit}`)}`,
     `  Humedad: ${Math.round(weather.humidity)} %`,
     `  Viento: ${Math.round(weather.windSpeed)} ${weather.windSpeedUnit}`,
+    cyan(line),
+  ].join("\n");
+}
+
+function forecastDayLabel(date: string, isToday: boolean): string {
+  if (isToday) return "hoy";
+
+  const [year, month, day] = date.split("-").map(Number);
+  if (!year || !month || !day) return date;
+
+  const weekday = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${weekday ?? ""} ${day}`;
+}
+
+export function renderForecastCard(city: City, days: DailyForecast[]): string {
+  const line = "─".repeat(WIDTH);
+  const unit = days[0]?.temperatureUnit ?? "";
+  const header = `  ${"Día".padEnd(7)}${`Máx/Mín${unit ? ` (${unit})` : ""}`.padEnd(14)}Lluvia`;
+
+  const rows = days.map((day, index) => {
+    const label = forecastDayLabel(day.date, index === 0).padEnd(7);
+    const temperatures = yellow(
+      `${Math.round(day.temperatureMax)}°/${Math.round(day.temperatureMin)}°`.padEnd(14),
+    );
+    const precipitation =
+      day.precipitationProbability === null
+        ? "—"
+        : `${Math.round(day.precipitationProbability)}%`;
+
+    return `  ${label}${temperatures}${precipitation}`;
+  });
+
+  return [
+    cyan(line),
+    `  ${cityLabel(city)}`,
+    cyan(header),
+    ...rows,
     cyan(line),
   ].join("\n");
 }

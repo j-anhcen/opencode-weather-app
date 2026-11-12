@@ -16,11 +16,13 @@ El objetivo de esta aplicación es que creemos una aplicación de consola que pi
 ## Ejemplo de petición http:
 
 1. Paso 1: Geocoding API.
-2. Paso 2: OpenMeteo API.
+2. Paso 2: OpenMeteo API (clima actual).
+3. OpenMeteo API (pronóstico de 7 días).
 
 ```
 https://geocoding-api.open-meteo.com/v1/search?name=Ottawa&count=1&language=es&format=json
 https://api.open-meteo.com/v1/forecast?latitude=45.41117&longitude=-75.69812&current=temperature_2m
+https://api.open-meteo.com/v1/forecast?latitude=45.41117&longitude=-75.69812&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=auto
 ```
 
 ## Inicializar proyecto
@@ -41,6 +43,8 @@ Esta es la apariencia que deseamos crear
   3. Buscar y agregar ciudad
   4. Eliminar ciudad
   5. Establecer ciudad default
+  6. Pronóstico 7 días (default)
+  7. Pronóstico 7 días (todas)
   8. Ajustes (°C)
   9. Salir
 ════════════════════════════════════════

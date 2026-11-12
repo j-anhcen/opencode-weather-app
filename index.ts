@@ -14,12 +14,13 @@ import {
   askNumber,
   cityLabel,
   renderCityList,
+  renderForecastCard,
   renderMenu,
   renderSettings,
   renderWeatherCard,
   unitLabel,
 } from "./src/ui.ts";
-import { fetchWeather, geocodeCity } from "./src/weather.ts";
+import { fetchDailyForecast, fetchWeather, geocodeCity } from "./src/weather.ts";
 
 function printError(error: unknown): void {
   const message =
@@ -57,6 +58,39 @@ async function showAllWeather(config: Config): Promise<void> {
 
   for (const city of config.cities) {
     await printWeather(city, config.unit);
+  }
+}
+
+async function printForecast(city: City, unit: Unit): Promise<void> {
+  console.log("\n  Consultando el pronóstico...");
+
+  try {
+    const days = await fetchDailyForecast(city, unit);
+    console.log(`\n${renderForecastCard(city, days)}`);
+  } catch (error) {
+    printError(error);
+  }
+}
+
+async function showDefaultForecast(config: Config): Promise<void> {
+  if (!config.defaultCity) {
+    console.log(
+      "\n  No hay una ciudad default. Agrega una con la opción 3 o establécelo con la opción 5.",
+    );
+    return;
+  }
+
+  await printForecast(config.defaultCity, config.unit);
+}
+
+async function showAllForecast(config: Config): Promise<void> {
+  if (config.cities.length === 0) {
+    console.log("\n  No hay ciudades guardadas. Agrega una con la opción 3.");
+    return;
+  }
+
+  for (const city of config.cities) {
+    await printForecast(city, config.unit);
   }
 }
 
@@ -194,6 +228,12 @@ async function main(): Promise<void> {
         break;
       case "5":
         await setDefaultCityFlow(config);
+        break;
+      case "6":
+        await showDefaultForecast(config);
+        break;
+      case "7":
+        await showAllForecast(config);
         break;
       case "8":
         await settingsFlow(config);

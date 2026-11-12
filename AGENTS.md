@@ -19,7 +19,7 @@ Weather CLI implemented with a Spanish interface. `index.ts` is the entrypoint (
 ## Repo-specific conventions
 
 - User-facing output and the menu are in Spanish; take exact labels/option numbers from `README.md`.
-- Weather lookups are two requests: geocoding (`https://geocoding-api.open-meteo.com/v1/search?name=<city>&count=1&language=es&format=json`) to get latitude/longitude, then forecast (`https://api.open-meteo.com/v1/forecast?latitude=<lat>&longitude=<lon>&current=temperature_2m`). No API key.
+- Weather lookups start with geocoding (`https://geocoding-api.open-meteo.com/v1/search?name=<city>&count=1&language=es&format=json`) to get latitude/longitude, then use the forecast API (`https://api.open-meteo.com/v1/forecast?latitude=<lat>&longitude=<lon>`): `current=...` for current weather and `daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=auto` for the 7-day forecast. No API key.
 - Config persists to `~/.config/weather-cli/config.json` (override the path with the `WEATHER_CLI_CONFIG` env var); it stores the default city, the saved cities, and the temperature unit.
 - `index.ts` at the repo root is the entrypoint (per `package.json` `module`); all other modules live in `src/`. There is no build step beyond `bun build --compile`.
 - Use `@bun-instructions.md` to get instructions about bun.
