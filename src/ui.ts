@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline";
+import { cyan, red, yellow } from "./colors.ts";
 import type { City, Config, Unit } from "./storage.ts";
 import type { CurrentWeather } from "./weather.ts";
 
@@ -37,11 +38,11 @@ export function renderMenu(config: Config): string {
   ];
 
   return [
-    line,
-    center("WEATHER CLI", WIDTH),
-    line,
-    ...options.map((option) => `  ${option}`),
-    line,
+    cyan(line),
+    cyan(center("WEATHER CLI", WIDTH)),
+    cyan(line),
+    ...options.map((option) => `  ${cyan(option.slice(0, 2))}${option.slice(2)}`),
+    cyan(line),
   ].join("\n");
 }
 
@@ -49,13 +50,13 @@ export function renderSettings(config: Config): string {
   const line = "─".repeat(WIDTH);
 
   return [
-    line,
-    "  AJUSTES",
-    line,
-    `  1. Celsius (°C)${config.unit === "celsius" ? "  ← actual" : ""}`,
-    `  2. Fahrenheit (°F)${config.unit === "fahrenheit" ? "  ← actual" : ""}`,
-    "  3. Volver",
-    line,
+    cyan(line),
+    cyan("  AJUSTES"),
+    cyan(line),
+    `  ${cyan("1.")} Celsius (°C)${config.unit === "celsius" ? "  ← actual" : ""}`,
+    `  ${cyan("2.")} Fahrenheit (°F)${config.unit === "fahrenheit" ? "  ← actual" : ""}`,
+    `  ${cyan("3.")} Volver`,
+    cyan(line),
   ].join("\n");
 }
 
@@ -71,7 +72,7 @@ export function renderCityList(cities: City[], defaultCity: City | null): string
         defaultCity.latitude === city.latitude &&
         defaultCity.longitude === city.longitude;
 
-      return `  ${index + 1}. ${cityLabel(city)}${isDefault ? " (default)" : ""}`;
+      return `  ${cyan(`${index + 1}.`)} ${cityLabel(city)}${isDefault ? " (default)" : ""}`;
     })
     .join("\n");
 }
@@ -80,13 +81,13 @@ export function renderWeatherCard(city: City, weather: CurrentWeather): string {
   const line = "─".repeat(WIDTH);
 
   return [
-    line,
+    cyan(line),
     `  ${cityLabel(city)}`,
-    `  Temperatura: ${Math.round(weather.temperature)}${weather.temperatureUnit}`,
-    `  Sensación: ${Math.round(weather.apparentTemperature)}${weather.temperatureUnit}`,
+    `  Temperatura: ${yellow(`${Math.round(weather.temperature)}${weather.temperatureUnit}`)}`,
+    `  Sensación: ${yellow(`${Math.round(weather.apparentTemperature)}${weather.temperatureUnit}`)}`,
     `  Humedad: ${Math.round(weather.humidity)} %`,
     `  Viento: ${Math.round(weather.windSpeed)} ${weather.windSpeedUnit}`,
-    line,
+    cyan(line),
   ].join("\n");
 }
 
@@ -113,6 +114,6 @@ export async function askNumber(
     const value = Number(answer);
     if (Number.isInteger(value) && value >= 1 && value <= max) return value - 1;
 
-    console.log(`  Opción no válida. Ingresa un número entre 1 y ${max}.`);
+    console.log(red(`  Opción no válida. Ingresa un número entre 1 y ${max}.`));
   }
 }

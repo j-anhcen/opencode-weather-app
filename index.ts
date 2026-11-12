@@ -1,3 +1,4 @@
+import { green, red } from "./src/colors.ts";
 import {
   addCity,
   cityKey,
@@ -23,7 +24,7 @@ import { fetchWeather, geocodeCity } from "./src/weather.ts";
 function printError(error: unknown): void {
   const message =
     error instanceof Error ? error.message : "Ocurrió un error inesperado.";
-  console.log(`\n  ${message}`);
+  console.log(`\n  ${red(message)}`);
 }
 
 async function printWeather(city: City, unit: Unit): Promise<void> {
@@ -64,7 +65,7 @@ async function addCityFlow(config: Config): Promise<void> {
   if (name === null) return;
 
   if (name === "") {
-    console.log("\n  Debes ingresar el nombre de una ciudad.");
+    console.log(red("\n  Debes ingresar el nombre de una ciudad."));
     return;
   }
 
@@ -74,14 +75,14 @@ async function addCityFlow(config: Config): Promise<void> {
     const city = await geocodeCity(name);
 
     if (!city) {
-      console.log(`\n  No se encontró la ciudad "${name}".`);
+      console.log(red(`\n  No se encontró la ciudad "${name}".`));
       return;
     }
 
     const hadDefault = config.defaultCity !== null;
 
     if (!addCity(config, city)) {
-      console.log(`\n  ${cityLabel(city)} ya está guardada.`);
+      console.log(red(`\n  ${cityLabel(city)} ya está guardada.`));
       return;
     }
 
@@ -93,7 +94,9 @@ async function addCityFlow(config: Config): Promise<void> {
       cityKey(config.defaultCity) === cityKey(city);
 
     console.log(
-      `\n  ${cityLabel(city)} agregada${becameDefault ? " y establecida como default" : ""}.`,
+      green(
+        `\n  ${cityLabel(city)} agregada${becameDefault ? " y establecida como default" : ""}.`,
+      ),
     );
   } catch (error) {
     printError(error);
@@ -120,7 +123,7 @@ async function removeCityFlow(config: Config): Promise<void> {
   if (!removeCity(config, city)) return;
 
   await saveConfig(config);
-  console.log(`\n  ${cityLabel(city)} eliminada.`);
+  console.log(green(`\n  ${cityLabel(city)} eliminada.`));
 }
 
 async function setDefaultCityFlow(config: Config): Promise<void> {
@@ -144,7 +147,7 @@ async function setDefaultCityFlow(config: Config): Promise<void> {
 
   config.defaultCity = city;
   await saveConfig(config);
-  console.log(`\n  ${cityLabel(city)} es ahora la ciudad default.`);
+  console.log(green(`\n  ${cityLabel(city)} es ahora la ciudad default.`));
 }
 
 async function settingsFlow(config: Config): Promise<void> {
@@ -164,7 +167,7 @@ async function settingsFlow(config: Config): Promise<void> {
 
   config.unit = unit;
   await saveConfig(config);
-  console.log(`\n  Unidad actualizada a ${unitLabel(unit)}.`);
+  console.log(green(`\n  Unidad actualizada a ${unitLabel(unit)}.`));
 }
 
 async function main(): Promise<void> {
@@ -196,7 +199,7 @@ async function main(): Promise<void> {
         await settingsFlow(config);
         break;
       default:
-        console.log("\n  Opción no válida. Intenta de nuevo.");
+        console.log(red("\n  Opción no válida. Intenta de nuevo."));
         continue;
     }
 
