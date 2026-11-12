@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Weather CLI in early scaffold stage. `index.ts` is still the default Bun hello-world stub; `README.md` (Spanish) is the product spec — menu options, desired behavior, and the OpenMeteo request flow.
+Weather CLI implemented with a Spanish interface. `index.ts` is the entrypoint (menu loop and option handlers); the rest of the modules live in `src/`: `ui.ts` (menu, cards, prompts), `weather.ts` (OpenMeteo client), `storage.ts` (config persistence). `README.md` (Spanish) is the product spec — menu options, desired behavior, and the OpenMeteo request flow.
 
 ## Toolchain
 
@@ -20,5 +20,6 @@ Weather CLI in early scaffold stage. `index.ts` is still the default Bun hello-w
 
 - User-facing output and the menu are in Spanish; take exact labels/option numbers from `README.md`.
 - Weather lookups are two requests: geocoding (`https://geocoding-api.open-meteo.com/v1/search?name=<city>&count=1&language=es&format=json`) to get latitude/longitude, then forecast (`https://api.open-meteo.com/v1/forecast?latitude=<lat>&longitude=<lon>&current=temperature_2m`). No API key.
-- `index.ts` at the repo root is the entrypoint (per `package.json` `module`); there is no `src/` layout or build step.
+- Config persists to `~/.config/weather-cli/config.json` (override the path with the `WEATHER_CLI_CONFIG` env var); it stores the default city, the saved cities, and the temperature unit.
+- `index.ts` at the repo root is the entrypoint (per `package.json` `module`); all other modules live in `src/`. There is no build step beyond `bun build --compile`.
 - Use `@bun-instructions.md` to get instructions about bun.

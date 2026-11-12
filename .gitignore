@@ -1,9 +1,13 @@
 # dependencies (bun install)
 node_modules
 
+# build
+weather
+
 # output
 out
 dist
+/weather
 *.tgz
 
 # code coverage
