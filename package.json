@@ -1,11 +1,14 @@
 {
   "name": "02-weather",
+  "version": "1.0.0",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
     "typecheck": "bun check",
-    "build": "bun build --compile ./src/index.ts --outfile weather",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "build": "bun test && bun build --compile ./src/index.ts --outfile weather",
     "start": "bun run src/index.ts",
     "dev": "bun run src/index.ts --watch"
   },

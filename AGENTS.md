@@ -8,13 +8,13 @@ Weather CLI implemented with a Spanish interface. `src/index.ts` is the entrypoi
 - `bun install` is the only package manager; keep `bun.lock` as the sole lockfile.
 - Typecheck: `bun check` (same as `bun run typecheck`). One file: `bun check src/index.ts`.
 - `tsconfig.json` sets `strict` and `noUncheckedIndexedAccess`, so array/record reads are `T | undefined` — handle the undefined case rather than asserting.
-- Tests: `bun test`, files must match `*.test.ts` / `*.spec.ts`. None exist yet, so `bun test` currently errors with "0 test files matching".
+- Tests: `bun test` (o `bun run test`), archivos en `tests/` con sufijo `*.test.ts`. `bunfig.toml` precarga `tests/setup.ts`, que mockea `node:readline`; por eso los tests manejan la entrada con `tests/helpers/readlineMock.ts`. Cobertura: `bun run test:coverage`.
 - No linter, formatter, pre-commit hooks, or CI are configured.
 
 ## Run and ship
 
 - Run: `bun src/index.ts`
-- The README's deliverable is a standalone executable: `bun build --compile ./src/index.ts --outfile weather` (verified). `out/`, `dist/`, and the binary artifacts are gitignored.
+- The README's deliverable is a standalone executable: `bun run build`, que ejecuta `bun test` antes de `bun build --compile ./src/index.ts --outfile weather` y no compila si algún test falla. `out/`, `dist/`, and the binary artifacts are gitignored.
 
 ## Repo-specific conventions
 
