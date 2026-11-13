@@ -9,12 +9,13 @@ Weather CLI implemented with a Spanish interface. `src/index.ts` is the entrypoi
 - Typecheck: `bun check` (same as `bun run typecheck`). One file: `bun check src/index.ts`.
 - `tsconfig.json` sets `strict` and `noUncheckedIndexedAccess`, so array/record reads are `T | undefined` — handle the undefined case rather than asserting.
 - Tests: `bun test` (o `bun run test`), archivos en `tests/` con sufijo `*.test.ts`. `bunfig.toml` precarga `tests/setup.ts`, que mockea `node:readline`; por eso los tests manejan la entrada con `tests/helpers/readlineMock.ts`. Cobertura: `bun run test:coverage`.
-- No linter, formatter, pre-commit hooks, or CI are configured.
+- No linter, formatter, or pre-commit hooks are configured; the only CI is the release workflow (see "Run and ship").
 
 ## Run and ship
 
 - Run: `bun src/index.ts`
 - The README's deliverable is a standalone executable: `bun run build`, que ejecuta `bun test` antes de `bun build --compile ./src/index.ts --outfile weather` y no compila si algún test falla. `out/`, `dist/`, and the binary artifacts are gitignored.
+- Release CI: `.github/workflows/release.yml` se ejecuta en cada push a `main` que toque `package.json` (y manualmente con `workflow_dispatch`). Lee `version` de `package.json` y, si todavía no existe el release `v<version>`, corre `bun run build` en Linux x64 (`ubuntu-latest`), macOS arm64 (`macos-latest`) y Windows x64 (`windows-latest`), y publica los binarios como assets del tag: `weather-linux-x64`, `weather-macos-arm64`, `weather-windows-x64.exe`. Para cortar un release basta con subir `version` en `package.json` y hacer push a `main`.
 
 ## Repo-specific conventions
 
