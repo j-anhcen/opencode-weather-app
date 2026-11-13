@@ -9,13 +9,13 @@ Weather CLI implemented with a Spanish interface. `src/index.ts` is the entrypoi
 - Typecheck: `bun check` (same as `bun run typecheck`). One file: `bun check src/index.ts`.
 - `tsconfig.json` sets `strict` and `noUncheckedIndexedAccess`, so array/record reads are `T | undefined` — handle the undefined case rather than asserting.
 - Tests: `bun test` (o `bun run test`), archivos en `tests/` con sufijo `*.test.ts`. `bunfig.toml` precarga `tests/setup.ts`, que mockea `node:readline`; por eso los tests manejan la entrada con `tests/helpers/readlineMock.ts`. Cobertura: `bun run test:coverage`.
-- No linter, formatter, or pre-commit hooks are configured; the only CI is the release workflow (see "Run and ship").
+- No linter, formatter, or pre-commit hooks are configured; the only CI is the release pipeline (see "Run and ship").
 
 ## Run and ship
 
 - Run: `bun src/index.ts`
 - The README's deliverable is a standalone executable: `bun run build`, que ejecuta `bun test` antes de `bun build --compile ./src/index.ts --outfile weather` y no compila si algún test falla. `out/`, `dist/`, and the binary artifacts are gitignored.
-- Release CI: `.github/workflows/release.yml` se ejecuta en cada push a `main` que toque `package.json` (y manualmente con `workflow_dispatch`). Lee `version` de `package.json` y, si todavía no existe el release `v<version>`, corre `bun run build` en Linux x64 (`ubuntu-latest`), macOS arm64 (`macos-latest`) y Windows x64 (`windows-latest`), y publica los binarios como assets del tag: `weather-linux-x64`, `weather-macos-arm64`, `weather-windows-x64.exe`. Para cortar un release basta con subir `version` en `package.json` y hacer push a `main`.
+- Release CI: `.github/workflows/release.yml` se ejecuta en cada push a `main` que toque `package.json` (y manualmente con `workflow_dispatch`). El job `version` lee `version` de `package.json` y considera el release `v<version>` completo solo si ya tiene los tres assets; si falta alguno, el job `publish` corre los tests y compila los tres binarios con cross-compile de Bun en un único `ubuntu-latest` (`bun build --compile --target=bun-linux-x64|bun-darwin-arm64|bun-windows-x64`), sin matrix de runners nativos. La publicación es idempotente (`gh release create` o `gh release upload --clobber`) y reintenta hasta 3 veces para absorber errores 5xx transitorios de GitHub. `.github/workflows/retry.yml` relanza automáticamente una ejecución fallida de `Release` (máximo 3 intentos). Assets del tag: `weather-linux-x64`, `weather-macos-arm64`, `weather-windows-x64.exe`. Para cortar un release basta con subir `version` en `package.json` y hacer push a `main`.
 
 ## Repo-specific conventions
 

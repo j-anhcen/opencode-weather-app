@@ -18,17 +18,15 @@ jobs:
   version:
     name: Resolver versión
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       tag: ${{ steps.version.outputs.tag }}
-      should_release: ${{ steps.version.outputs.should_release }}
-      tag_exists: ${{ steps.version.outputs.tag_exists }}
+      needs_publish: ${{ steps.version.outputs.needs_publish }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Leer versión de package.json
+      - name: Leer versión y estado del release
         id: version
         env:
           GH_TOKEN: ${{ github.token }}
@@ -45,41 +43,35 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Versión detectada: $TAG"
 
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "El release $TAG ya existe; no se publica nada."
+          ASSETS=(weather-linux-x64 weather-macos-arm64 weather-windows-x64.exe)
+          if gh release view "$TAG" --json assets --jq '.assets[].name' > /tmp/actual 2>/dev/null; then
+            missing=0
+            for asset in "${ASSETS[@]}"; do
+              grep -qx "$asset" /tmp/actual || missing=1
+            done
+            if [ "$missing" -eq 0 ]; then
+              echo "needs_publish=false" >> "$GITHUB_OUTPUT"
+              echo "El release $TAG ya está completo; no se publica nada."
+            else
+              echo "needs_publish=true" >> "$GITHUB_OUTPUT"
+              echo "El release $TAG existe pero está incompleto; se reparará."
+            fi
           else
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "needs_publish=true" >> "$GITHUB_OUTPUT"
             echo "El release $TAG no existe; se publicará."
           fi
 
-          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  build:
-    name: Build (${{ matrix.asset }})
+  publish:
+    name: Compilar y publicar
     needs: version
-    if: needs.version.outputs.should_release == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            built: weather
-            asset: weather-linux-x64
-          - os: macos-latest
-            built: weather
-            asset: weather-macos-arm64
-          - os: windows-latest
-            built: weather.exe
-            asset: weather-windows-x64.exe
-    runs-on: ${{ matrix.os }}
+    if: needs.version.outputs.needs_publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Instalar Bun
         uses: oven-sh/setup-bun@v2
@@ -89,57 +81,51 @@ jobs:
       - name: Instalar dependencias
         run: bun install --frozen-lockfile
 
-      - name: Tests y compilar binario
-        run: bun run build
+      - name: Tests
+        run: bun test
 
-      - name: Renombrar binario
-        shell: bash
-        run: mv "${{ matrix.built }}" "${{ matrix.asset }}"
-
-      - name: Subir artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
-          if-no-files-found: error
-
-  release:
-    name: Publicar release
-    needs: [version, build]
-    if: needs.version.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Descargar binarios
-        uses: actions/download-artifact@v4
-        with:
-          pattern: weather-*
-          path: artifacts
-          merge-multiple: true
-
-      - name: Restaurar permisos de ejecución
-        run: chmod +x artifacts/weather-linux-x64 artifacts/weather-macos-arm64
-
-      - name: Crear tag y release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.version.outputs.tag }}
-          TAG_EXISTS: ${{ needs.version.outputs.tag_exists }}
+      - name: Compilar binarios (cross-compile)
         run: |
           set -euo pipefail
 
-          TARGET_ARGS=()
-          if [ "$TAG_EXISTS" != "true" ]; then
-            TARGET_ARGS=(--target "$GITHUB_SHA")
-          fi
+          mkdir -p dist
+          bun build --compile --target=bun-linux-x64    ./src/index.ts --outfile dist/weather-linux-x64
+          bun build --compile --target=bun-darwin-arm64 ./src/index.ts --outfile dist/weather-macos-arm64
+          bun build --compile --target=bun-windows-x64  ./src/index.ts --outfile dist/weather-windows-x64.exe
 
-          gh release create "$TAG" artifacts/* \
-            --title "$TAG" \
-            --generate-notes \
-            "${TARGET_ARGS[@]}"
+          file dist/*
+          ls -l dist
 
-          echo "Release publicado: $TAG"
+      - name: Crear o reparar el release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          publish() {
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" dist/* --clobber
+            else
+              local target=()
+              git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || target=(--target "$GITHUB_SHA")
+              gh release create "$TAG" dist/* \
+                --title "$TAG" \
+                --generate-notes \
+                "${target[@]}"
+            fi
+          }
+
+          for attempt in 1 2 3; do
+            if publish; then
+              echo "Release publicado: $TAG"
+              exit 0
+            fi
+            echo "::warning::Intento $attempt falló (posible error transitorio de GitHub)."
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 20))
+            fi
+          done
+
+          echo "::error::No se pudo publicar $TAG tras 3 intentos."
+          exit 1
